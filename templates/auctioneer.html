@@ -13,7 +13,7 @@
     </div>
 
     {% if qr_code_b64 %}
-    <div class="qr-section">
+    <div class="qr-section" id="qr-section">
       <p class="qr-label">Scan to join</p>
       <img src="data:image/png;base64,{{ qr_code_b64 }}" alt="QR Code to join auction" class="qr-code">
       <p class="join-url">/join/{{ game.game_id }}</p>
@@ -57,6 +57,7 @@
         <tbody id="results-body"></tbody>
       </table>
       <button class="btn btn-outline btn-full hidden" id="btn-download-csv">Download CSV</button>
+      <a href="/" class="btn btn-primary btn-full hidden" id="btn-new-auction">New Auction</a>
     </div>
   </div>
 </div>

@@ -17,6 +17,8 @@
   const resultsBody = document.getElementById("results-body");
   const winnersSectionEl = document.getElementById("winners-section");
   const btnCsv = document.getElementById("btn-download-csv");
+  const btnNewAuction = document.getElementById("btn-new-auction");
+  const qrSectionEl = document.getElementById("qr-section");
 
   // Buttons
   btnStart.addEventListener("click", function () {
@@ -41,6 +43,7 @@
     btnStart.classList.add("hidden");
     btnRaise.classList.remove("hidden");
     btnEnd.classList.remove("hidden");
+    if (qrSectionEl) qrSectionEl.classList.add("hidden");
     activeCountEl.textContent = state.active_count;
     totalCountEl.textContent = state.total_bidders;
     priceEl.textContent = "$" + state.current_price;
@@ -88,8 +91,9 @@
     }
     activeCountEl.textContent = "0";
 
-    // CSV download
+    // CSV download and new auction
     btnCsv.classList.remove("hidden");
+    btnNewAuction.classList.remove("hidden");
     btnCsv.addEventListener("click", function () {
       const rows = [["Price", "Active Bidders"]];
       if (data.price_history) {
