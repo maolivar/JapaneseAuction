@@ -25,11 +25,11 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Then open [http://localhost:5000](http://localhost:5000) in your browser.
+Then open [http://localhost:5001](http://localhost:5001) in your browser.
 
 ## How to Run an Auction
 
-1. **Create** — Go to `http://localhost:5000`, fill in the auction title, starting price, and increment, then click "Create Auction".
+1. **Create** — Go to the home page, fill in the auction title, starting price, and increment, then click "Create Auction".
 2. **Share** — The auctioneer page shows a QR code. Have bidders scan it (or share the `/join/<id>` URL).
 3. **Bidders join** — Each bidder enters their name and lands on their bidder page.
 4. **Start** — Click "Start Auction" on the auctioneer page.
