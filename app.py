@@ -7,6 +7,7 @@ import qrcode
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, abort
 from flask_socketio import SocketIO, join_room, emit
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from game import AuctionGame
 
@@ -14,6 +15,11 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
+
+# ProxyFix lets Flask see the real scheme (http vs https) and host from the
+# X-Forwarded-* headers set by Heroku's reverse proxy. Locally those headers
+# are absent so this is a no-op — no toggling needed between environments.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 
@@ -46,7 +52,10 @@ def create():
     game_id = str(uuid.uuid4())[:8]
     game = AuctionGame(game_id, title, starting_price, increment)
 
-    join_url = url_for("join_get", game_id=game_id, _external=True, _scheme="http")
+    # _external=True makes url_for produce a full URL (scheme + host + path).
+    # With ProxyFix applied above, Flask reads the correct scheme from the request
+    # in both environments: http://localhost:5001/... locally, https://app.herokuapp.com/... on Heroku.
+    join_url = url_for("join_get", game_id=game_id, _external=True)
     qr_b64 = generate_qr_b64(join_url)
 
     games[game_id] = {"game": game, "qr_b64": qr_b64}

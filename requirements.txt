@@ -3,3 +3,4 @@ flask-socketio
 eventlet
 qrcode[pil]
 python-dotenv
+gunicorn
