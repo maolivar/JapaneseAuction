@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Join — {{ game.title }}{% endblock %}
+
+{% block body_attrs %}data-game-id="{{ game_id }}" data-bidder-id=""{% endblock %}
+
+{% block content %}
+<div class="page-center">
+  <div class="card">
+    <h1>{{ game.title }}</h1>
+    <p class="subtitle">Enter your name to join the auction.</p>
+    <form method="POST" action="/join/{{ game_id }}">
+      <div class="form-group">
+        <label for="name">Your Name</label>
+        <input type="text" id="name" name="name" placeholder="e.g. Alice" required autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Join Auction</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

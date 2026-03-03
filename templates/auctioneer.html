@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Auctioneer — {{ game.title }}{% endblock %}
+
+{% block body_attrs %}data-game-id="{{ game.game_id }}"{% endblock %}
+
+{% block content %}
+<div class="page-center">
+  <div class="card">
+    <div class="game-header">
+      <h1>{{ game.title }}</h1>
+      <span class="game-id-badge">ID: {{ game.game_id }}</span>
+    </div>
+
+    {% if qr_code_b64 %}
+    <div class="qr-section">
+      <p class="qr-label">Scan to join</p>
+      <img src="data:image/png;base64,{{ qr_code_b64 }}" alt="QR Code to join auction" class="qr-code">
+      <p class="join-url">/join/{{ game.game_id }}</p>
+      <a href="/test-bidder/{{ game.game_id }}" target="_blank"
+         class="btn btn-outline btn-full" id="btn-test-bidder">+ Add Test Bidder</a>
+    </div>
+    {% endif %}
+
+    <div class="price-section">
+      <div class="price-label">Current Price</div>
+      <div class="price-display" id="current-price">${{ game.current_price }}</div>
+    </div>
+
+    <div class="stats-section">
+      <div class="stat">
+        <span class="stat-value" id="active-count">{{ game.get_active_count() }}</span>
+        <span class="stat-label">Active Bidders</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="total-count">{{ game.bidders | length }}</span>
+        <span class="stat-label">Total Joined</span>
+      </div>
+    </div>
+
+    <div class="controls" id="controls">
+      <button class="btn btn-primary btn-full" id="btn-start">Start Auction</button>
+      <button class="btn btn-success btn-full hidden" id="btn-raise">Raise Price (+${{ game.increment }})</button>
+      <button class="btn btn-danger btn-full hidden" id="btn-end">End Auction</button>
+    </div>
+
+    <div class="results hidden" id="results">
+      <h2 class="results-title">Auction Results</h2>
+      <div class="winners-section" id="winners-section"></div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Price</th>
+            <th>Active Bidders</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+      <button class="btn btn-outline btn-full hidden" id="btn-download-csv">Download CSV</button>
+    </div>
+  </div>
+</div>
+<script src="/static/js/auctioneer.js"></script>
+{% endblock %}

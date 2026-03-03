@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Bidder — {{ game.title }}{% endblock %}
+
+{% block body_attrs %}data-game-id="{{ game.game_id }}" data-bidder-id="{{ bidder_id }}"{% endblock %}
+
+{% block content %}
+<div class="page-center">
+  <div class="card">
+    <h1>{{ game.title }}</h1>
+
+    <div class="price-section">
+      <div class="price-label">Current Price</div>
+      <div class="price-display" id="current-price">${{ game.current_price }}</div>
+    </div>
+
+    <div class="status-section">
+      <p class="status-message" id="status-message">
+        {% if game.status == "waiting" %}
+          Waiting for auction to start...
+        {% elif game.status == "running" %}
+          {% if game.bidders[bidder_id].active %}
+            You are active
+          {% else %}
+            You have dropped out
+          {% endif %}
+        {% else %}
+          Auction ended
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="dropout-section">
+      <button
+        class="btn btn-dropout btn-full"
+        id="btn-dropout"
+        {% if game.status != "running" or not game.bidders[bidder_id].active %}disabled{% endif %}
+      >
+        Drop Out
+      </button>
+    </div>
+
+    <div class="winner-section hidden" id="winner-section">
+      <div class="winner-announcement" id="winner-announcement"></div>
+    </div>
+  </div>
+</div>
+<script src="/static/js/bidder.js"></script>
+{% endblock %}
