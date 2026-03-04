@@ -44,6 +44,11 @@ class AuctionGame:
             return {"bidder_id": bidder_id, "name": bidder["name"], "remaining_active_count": self.get_active_count()}
         bidder["active"] = False
         self.last_dropper = bidder
+
+        # Update the most recent price history entry with new active count
+        if self.price_history:
+            self.price_history[-1]["active_count"] = self.get_active_count()
+
         return {
             "bidder_id": bidder_id,
             "name": bidder["name"],
