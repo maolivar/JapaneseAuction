@@ -57,6 +57,9 @@ class AuctionGame:
 
     def end_auction(self):
         self.status = "finished"
+        return self.get_result()
+
+    def get_result(self):
         active = self.get_active_bidders()
         if active:
             winners = [b["name"] for b in active]

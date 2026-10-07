@@ -132,6 +132,11 @@ def bidder(game_id, bidder_id):
 def handle_join_room(data):
     game_id = data.get("game_id")
     join_room(game_id)
+    # Clients re-emit join_room on every (re)connect, so always send them a
+    # fresh snapshot to recover from anything missed while disconnected.
+    entry = games.get(game_id)
+    if entry:
+        emit("state_sync", entry["game"].get_state())
 
 
 @socketio.on("start_auction")
@@ -162,8 +167,18 @@ def handle_drop_out(data):
     bidder_id = data.get("bidder_id")
     entry = games.get(game_id)
     if not entry:
-        return
+        return {"ok": False}
     game = entry["game"]
+    bidder = game.bidders.get(bidder_id)
+    if not bidder:
+        return {"ok": False}
+    # Already recorded (e.g. a client retry) or auction over: confirm, but
+    # don't re-broadcast or end the auction twice.
+    if not bidder["active"] or game.status == "finished":
+        return {"ok": True}
+    if game.status != "running":
+        return {"ok": False}
+
     result = game.drop_out(bidder_id)
     socketio.emit(
         "bidder_dropped",
@@ -173,6 +188,8 @@ def handle_drop_out(data):
     if result["remaining_active_count"] == 0:
         end_result = game.end_auction()
         socketio.emit("auction_ended", end_result, to=game_id)
+    # Returned value is delivered to the client as the Socket.IO acknowledgement.
+    return {"ok": True}
 
 
 @socketio.on("end_auction")
@@ -186,6 +203,15 @@ def handle_end_auction(data):
         return
     result = game.end_auction()
     socketio.emit("auction_ended", result, to=game_id)
+
+
+@socketio.on("request_result")
+def handle_request_result(data):
+    game_id = data.get("game_id")
+    entry = games.get(game_id)
+    if not entry or entry["game"].status != "finished":
+        return
+    emit("auction_ended", entry["game"].get_result())
 
 
 @socketio.on("request_state")

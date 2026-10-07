@@ -3,8 +3,11 @@
 
   const socket = io();
 
-  // Join the room for this game
-  socket.emit("join_room", { game_id: gameId, role: "auctioneer" });
+  // (Re)join the room on every connect; after a reconnect the new connection
+  // is not in the room until we join again. The server replies with state_sync.
+  socket.on("connect", function () {
+    socket.emit("join_room", { game_id: gameId, role: "auctioneer" });
+  });
 
   // UI elements
   const priceEl = document.getElementById("current-price");
@@ -52,6 +55,24 @@
   socket.on("price_update", function (data) {
     priceEl.textContent = "$" + data.new_price;
     activeCountEl.textContent = data.active_count;
+  });
+
+  // Snapshot sent after (re)joining: refresh counts and catch an auction that
+  // ended while we were disconnected.
+  socket.on("state_sync", function (state) {
+    priceEl.textContent = "$" + state.current_price;
+    activeCountEl.textContent = state.active_count;
+    totalCountEl.textContent = state.total_bidders;
+    if (state.status === "running") {
+      btnStart.classList.add("hidden");
+      btnRaise.classList.remove("hidden");
+      btnEnd.classList.remove("hidden");
+      if (qrSectionEl) qrSectionEl.classList.add("hidden");
+    } else if (state.status === "finished" && resultsEl.classList.contains("hidden")) {
+      // Missed the auction_ended broadcast; ask for the result again
+      // (the server ignores end_auction on a finished game, so re-derive it).
+      socket.emit("request_result", { game_id: gameId });
+    }
   });
 
   socket.on("bidder_dropped", function (data) {

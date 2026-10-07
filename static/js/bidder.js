@@ -4,9 +4,12 @@
 
   const socket = io();
 
-  // Join room and request current state
-  socket.emit("join_room", { game_id: gameId, role: "bidder", bidder_id: bidderId });
-  socket.emit("request_state", { game_id: gameId });
+  // (Re)join the room on every connect. Socket.IO reconnects automatically
+  // (phone sleep, Wi-Fi blips), but the new connection is not in the room
+  // until we join again. The server replies with a state_sync.
+  socket.on("connect", function () {
+    socket.emit("join_room", { game_id: gameId, role: "bidder", bidder_id: bidderId });
+  });
 
   // UI elements
   const priceEl = document.getElementById("current-price");
@@ -15,19 +18,47 @@
   const winnerSection = document.getElementById("winner-section");
   const winnerAnnouncement = document.getElementById("winner-announcement");
 
-  let droppedOut = false;
+  let droppedOut = false;     // student pressed Drop Out (or auction ended)
+  let dropConfirmed = false;  // server acknowledged the drop
+  let dropPending = false;    // a drop_out request is awaiting its ack
 
   function disableDropout() {
     btnDropout.disabled = true;
     droppedOut = true;
   }
 
+  function confirmDropout() {
+    dropConfirmed = true;
+    disableDropout();
+    statusEl.textContent = "You have dropped out";
+  }
+
+  // Send drop_out and retry until the server acknowledges it, so a request
+  // lost on a dead connection doesn't leave the student marked as active.
+  function sendDropOut() {
+    if (dropConfirmed || dropPending) return;
+    dropPending = true;
+    socket.timeout(4000).emit("drop_out", { game_id: gameId, bidder_id: bidderId }, function (err, res) {
+      dropPending = false;
+      if (dropConfirmed) return;
+      if (!err && res && res.ok) {
+        confirmDropout();
+      } else if (!err) {
+        // Server answered but refused (e.g. game no longer exists): don't loop.
+        statusEl.textContent = "Could not drop out. Please tell the instructor.";
+      } else {
+        statusEl.textContent = "Connection problem, retrying drop out...";
+        setTimeout(sendDropOut, 1000);
+      }
+    });
+  }
+
   // Drop Out button
   btnDropout.addEventListener("click", function () {
     if (droppedOut) return;
-    socket.emit("drop_out", { game_id: gameId, bidder_id: bidderId });
     disableDropout();
-    statusEl.textContent = "You have dropped out";
+    statusEl.textContent = "Dropping out...";
+    sendDropOut();
   });
 
   // State sync on connect (for late joiners or page reload)
@@ -43,8 +74,10 @@
     if (state.status === "running") {
       const bidder = state.bidders && state.bidders[bidderId];
       if (bidder && !bidder.active) {
-        disableDropout();
-        statusEl.textContent = "You have dropped out";
+        confirmDropout();
+      } else if (bidder && bidder.active && droppedOut) {
+        // We pressed Drop Out but the server never got it: send it again.
+        sendDropOut();
       } else if (bidder && bidder.active) {
         btnDropout.disabled = false;
         statusEl.textContent = "You are active";
@@ -74,6 +107,7 @@
 
   socket.on("auction_ended", function (data) {
     disableDropout();
+    dropConfirmed = true;
     statusEl.textContent = "Auction ended";
 
     winnerSection.classList.remove("hidden");
